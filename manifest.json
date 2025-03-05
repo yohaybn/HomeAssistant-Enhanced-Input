@@ -1,0 +1,8 @@
+{
+  "domain": "enhanced_input",
+  "name": "Enhanced Input",
+  "documentation": "https://github.com/yohaybn/HomeAssistant-Enhanced-Input",
+  "codeowners": ["@yohaybn"],
+  "version": "1.0.0",
+  "config_flow": true
+}

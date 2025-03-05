@@ -1,0 +1,11 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Enhanced Input",
+        "description": "Add Enhanced Input integration.",
+        "data": {}
+      }
+    }
+  }
+}

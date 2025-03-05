@@ -1,0 +1,19 @@
+create_input_text:
+  description: "Create or update an input text entity."
+  fields:
+    name:
+      description: "The name of the input text entity."
+      example: "my_text"
+    title:
+      description: "The title to display as the state."
+      example: "My Title"
+    text:
+      description: "The long text to store in the entity."
+      example: "This is a long text."
+
+delete_input_text:
+  description: "Delete an input text entity."
+  fields:
+    name:
+      description: "The name of the input text entity to delete."
+      example: "my_text"
