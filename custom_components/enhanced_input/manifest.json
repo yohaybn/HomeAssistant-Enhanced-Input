@@ -1,8 +1,10 @@
 {
   "domain": "enhanced_input",
   "name": "Enhanced Input",
-  "documentation": "https://github.com/yohaybn/HomeAssistant-Enhanced-Input",
+  "documentation": "https://github.com/danieldotnl/hass-multiscrape",
+  "iot_class": "local_polling",
+    
   "codeowners": ["@yohaybn"],
-  "version": "1.0.0",
+  "version": "0.0.1",
   "config_flow": true
 }
