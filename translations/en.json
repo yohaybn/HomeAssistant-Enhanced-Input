@@ -7,5 +7,35 @@
         "data": {}
       }
     }
+  },
+  "services": {
+    "create_input_text": {
+      "name": "Create Input Text",
+      "description": "Create or update an input text entity.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "The name of the input text entity."
+        },
+        "title": {
+          "name": "Title",
+          "description": "The title to display as the state."
+        },
+        "text": {
+          "name": "Text",
+          "description": "The long text to store in the entity."
+        }
+      }
+    },
+    "delete_input_text": {
+      "name": "Delete Input Text",
+      "description": "Delete an input text entity.",
+      "fields": {
+        "name": {
+          "name": "Name",
+          "description": "The name of the input text entity to delete."
+        }
+      }
+    }
   }
 }
