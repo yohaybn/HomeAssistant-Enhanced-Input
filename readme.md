@@ -80,7 +80,7 @@ Each long text input entity has the following attributes:
 -   `long_text`: The stored long text.
 -   `length`: The length of the stored text.
 
-## Example Automation
+## Uses Examples
 
 This automation demonstrates how to generate content using an AI LLM (e.g., using the `conversation.agent` service) and store the response in a long text input entity.
 
@@ -103,7 +103,42 @@ automation:
           title: "AI Response at {{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
 ```
+```yaml
+script:
+generate_text:
+  sequence:   
+    - action: google_generative_ai_conversation.generate_content
+      response_variable: content
+      data:
+        prompt: generate long content
+    - variables:
+        response: content
+    - action: enhanced_input.create_input_text
+      data:
+        name: long content
+        title: some title
+        text: "{{content.text}}"
+```
+## Displaying Long Text with a Markdown Card
 
+You can display the long text stored in your entity using a Markdown card in your Home Assistant dashboard.
+
+**Example Card Configuration:**
+
+
+
+```yaml
+type: markdown
+content: |
+  ## {{ states('enhanced_input.ai_response') }}
+
+  {{ state_attr('enhanced_input.ai_response', 'long_text') }}
+  ---
+  **Length:** {{ state_attr('enhanced_input.ai_response', 'length') }}
+
+```
+
+Replace `enhanced_input.ai_response` with the actual entity ID of your long text input.
 ## TODO
 
 -   Implement an enhanced input select entity.
