@@ -113,6 +113,16 @@ automation:
 
 We encourage users to suggest their ideas for enhancing this integration. Please open an issue on GitHub with your suggestions.
 
+----
+
+### Donate
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/yohaybn)
+
+If you find it helpful or interesting, consider supporting me by buying me a coffee or starring the project on GitHub! ☕⭐
+Your support helps me improve and maintain this project while keeping me motivated. Thank you! ❤️
+
+
+
 ## Contributing
 
 Contributions are welcome! If you find any issues or have suggestions for improvements, please open an issue or submit a pull request on GitHub.
