@@ -1,19 +1,34 @@
 create_input_text:
+  name: "Create Input Text"
   description: "Create or update an input text entity."
   fields:
     name:
+      name: "Name"
       description: "The name of the input text entity."
       example: "my_text"
+      selector:
+        text:
     title:
+      name: "Title"
       description: "The title to display as the state."
       example: "My Title"
+      selector:
+        text:
     text:
+      name: "Text"
       description: "The long text to store in the entity."
       example: "This is a long text."
+      selector:
+        text:
 
 delete_input_text:
+  name: "Delete Input Text"
   description: "Delete an input text entity."
   fields:
     name:
+      name: "Name"
       description: "The name of the input text entity to delete."
       example: "my_text"
+      required: true
+      selector:
+        text:
