@@ -13,12 +13,15 @@ This Home Assistant integration provides a service to create and manage long tex
 
 ## Installation
 
-1.  **HACS (Home Assistant Community Store) (Recommended):**
-    * Add this repository as a custom repository in HACS (type: Integration).
-    * Search for "Enhanced Input" in HACS and install it.
-    * Restart Home Assistant.
+### Installation via HACS (Recommended)
+1. Open HACS in your Home Assistant dashboard.
+2. Until this repository is part of HACS by default, you need to add it as a custom repository. (working on it)
+3. Go to *Integrations* > *Add custom repository* and enter:  ``` https://github.com/yohaybn/HomeAssistant-Enhanced-Input ```
+4. Once added, search for "Enhanced-Input" in HACS and install it.
 
-2.  **Manual Installation:**
+[![My Home Assistant](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?repository=HomeAssistant-Enhanced-Input&owner=yohaybn)
+
+### Manual Installation
     * Copy the `enhanced_input` folder into your Home Assistant's `custom_components` directory.
     * Restart Home Assistant.
 
