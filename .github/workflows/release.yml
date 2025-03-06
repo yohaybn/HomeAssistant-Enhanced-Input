@@ -1,12 +1,11 @@
 name: Release
 
 on:
-
   release:
     types: [published]
 
 permissions:
-  contents: write     # Allows write access to repository contents, which includes uploading assets
+  contents: write
 
 jobs:
   release_zip_file:
@@ -24,17 +23,13 @@ jobs:
           python ${{ github.workspace }}/.github/update_manifest.py --version ${{ github.ref_name }}
       - name: Create zip
         run: |
-          cd custom_components/epg
-          zip epg.zip -r ./
-      - name: Test
-        run: pwd
-      - name: test2
-        run: ls -lR
+          cd custom_components/enhanced_input
+          zip enhanced_input.zip -r ./
       - name: Upload zip to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./custom_components/epg/epg.zip
-          asset_name: epg.zip
+          file: ./custom_components/enhanced_input/enhanced_input.zip
+          asset_name: enhanced_input.zip
           tag: ${{ github.ref }}
           overwrite: true
