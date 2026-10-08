@@ -6,8 +6,11 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.const import CONF_NAME
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.storage import Store
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo  # For device_info
 from typing import Any  # For type hinting
+
+from .helpers import migrate_storage, slugify_name, to_text
 
 DOMAIN = "enhanced_input"
 SERVICE_CREATE_INPUT_TEXT = "create_input_text"
@@ -47,36 +50,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     async def save_persistent_data():
         await store.async_save(stored_data_dict)
 
+    # Clean up duplicate "_2_2" entities created by older versions.
+    stored_data_dict_clean, removed_ids = migrate_storage(
+        {k: v for k, v in stored_data_dict.items() if isinstance(v, dict)}
+    )
+    if removed_ids or len(stored_data_dict_clean) != len(stored_data_dict):
+        registry = er.async_get(hass)
+        for removed_id in removed_ids:
+            tail = removed_id.split(".")[-1]
+            reg_id = registry.async_get_entity_id(DOMAIN, DOMAIN, f"{DOMAIN}_{tail}")
+            if reg_id:
+                registry.async_remove(reg_id)
+        stored_data_dict.clear()
+        stored_data_dict.update(stored_data_dict_clean)
+        _LOGGER.info("Removed duplicate entities from storage: %s", removed_ids)
+
     entities_to_add = []
-    for entity_id_str, entity_data_dict_any in list(stored_data_dict.items()):
-        if not isinstance(entity_data_dict_any, dict):
-            _LOGGER.warning(
-                f"Removing invalid (non-dict) stored data for {entity_id_str}"
-            )
-            stored_data_dict.pop(entity_id_str, None)
-            continue
-
-        entity_data_dict: dict[str, Any] = entity_data_dict_any
-
-        object_id = entity_id_str.split(".")[-1]
-        constructor_name_arg = object_id.replace("_", " ").title()
-
-        title_for_state_and_maybe_name = entity_data_dict.get(
-            "title", constructor_name_arg
+    for entity_id_str, entity_data_dict in list(stored_data_dict.items()):
+        object_id = slugify_name(entity_id_str.split(".")[-1])
+        name = to_text(
+            entity_data_dict.get("name") or object_id.replace("_", " ").title()
         )
-        text_value = entity_data_dict.get("text", "")
 
         try:
             entity = LongTextInputEntity(
                 hass,
                 entry.entry_id,
-                constructor_name_arg,
-                title_for_state_and_maybe_name,
-                text_value,
+                name,
+                to_text(entity_data_dict.get("title", name)),
+                to_text(entity_data_dict.get("text", "")),
                 stored_data_dict,
                 save_persistent_data,
             )
-            hass.data[DOMAIN][entry.entry_id][entity.entity_id] = entity
+            hass.data[DOMAIN][entry.entry_id][object_id] = entity
             entities_to_add.append(entity)
         except Exception as e:
             _LOGGER.error(
@@ -89,12 +95,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     await save_persistent_data()
 
     async def handle_create_input_text(call: ServiceCall):
-        name_arg = call.data.get(CONF_NAME, DEFAULT_NAME)
-        text_arg = call.data.get(CONF_TEXT, "")
-        title_arg = call.data.get(CONF_TITLE, name_arg)
+        name_arg = to_text(call.data.get(CONF_NAME, DEFAULT_NAME))
+        text_arg = to_text(call.data.get(CONF_TEXT, ""))
+        title_arg = to_text(call.data.get(CONF_TITLE, name_arg))
 
-        object_id = name_arg.lower().replace(" ", "_")
-        target_entity_id = f"{DOMAIN}.{object_id}"
+        target_entity_id = slugify_name(name_arg)
 
         entry_entities_dict = hass.data[DOMAIN][entry.entry_id]
 
@@ -117,7 +122,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 stored_data_dict,  # Pass the mutable dict
                 save_persistent_data,  # Pass the save function
             )
-            entry_entities_dict[entity.entity_id] = entity
+            entry_entities_dict[target_entity_id] = entity
             await component.async_add_entities([entity])
 
     async def handle_delete_input_text(call: ServiceCall):
@@ -126,7 +131,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             _LOGGER.error(f"{SERVICE_DELETE_INPUT_TEXT} requires '{CONF_NAME}'")
             return
 
-        object_id_to_delete = name_param.lower().replace(" ", "_")
+        object_id_to_delete = slugify_name(name_param)
         entity_id_to_delete = f"{DOMAIN}.{object_id_to_delete}"
 
         entity_instance_to_delete = None
@@ -134,15 +139,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         for eid_key, entities_in_entry in hass.data[DOMAIN].items():
             if eid_key == "component" or not isinstance(entities_in_entry, dict):
                 continue
-            if entity_id_to_delete in entities_in_entry:
-                entity_instance_to_delete = entities_in_entry[entity_id_to_delete]
+            if object_id_to_delete in entities_in_entry:
+                entity_instance_to_delete = entities_in_entry[object_id_to_delete]
                 source_entry_id_for_entity = eid_key
                 break
 
         if entity_instance_to_delete and source_entry_id_for_entity:
             _LOGGER.info(f"Deleting entity: {entity_id_to_delete}")
-            hass.data[DOMAIN][source_entry_id_for_entity].pop(entity_id_to_delete, None)
-            await component.async_remove_entity(entity_id_to_delete)
+            hass.data[DOMAIN][source_entry_id_for_entity].pop(object_id_to_delete, None)
+            await component.async_remove_entity(entity_instance_to_delete.entity_id)
         else:
             _LOGGER.warning(
                 f"Entity {entity_id_to_delete} not found in active entities."
@@ -153,6 +158,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
                 )
                 stored_data_dict.pop(entity_id_to_delete, None)
                 await save_persistent_data()
+            registry = er.async_get(hass)
+            reg_id = registry.async_get_entity_id(
+                DOMAIN, DOMAIN, f"{DOMAIN}_{object_id_to_delete}"
+            )
+            if reg_id:
+                registry.async_remove(reg_id)
 
     hass.services.async_register(
         DOMAIN, SERVICE_CREATE_INPUT_TEXT, handle_create_input_text
@@ -178,7 +189,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     entities_to_remove_ids = []
     if isinstance(entry_entities_dict, dict):
-        entities_to_remove_ids = list(entry_entities_dict.keys())
+        entities_to_remove_ids = [e.entity_id for e in entry_entities_dict.values()]
 
     if component and entities_to_remove_ids:
         for entity_id_to_remove in entities_to_remove_ids:
@@ -196,6 +207,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
 
 
 class LongTextInputEntity(Entity):
+    _attr_should_poll = False
+
     def __init__(
         self,
         hass: HomeAssistant,
@@ -210,14 +223,14 @@ class LongTextInputEntity(Entity):
         self.hass = hass
         self._config_entry_id = config_entry_id
 
-        self._name = name
-        self._title = title
-        self._text = text
+        self._name = to_text(name)
+        self._title = to_text(title)
+        self._text = to_text(text)
 
         self._stored_data_ref = stored_data_ref
         self._save_data_func = save_data_func
 
-        object_id_part = self._name.lower().replace(" ", "_")
+        object_id_part = slugify_name(self._name)
         self.entity_id = f"{DOMAIN}.{object_id_part}"
         self._attr_unique_id = f"{DOMAIN}_{object_id_part}"
 
@@ -257,6 +270,7 @@ class LongTextInputEntity(Entity):
     async def async_added_to_hass(self):
         _LOGGER.debug(f"Entity {self.entity_id} added. Persisting current state.")
         self._stored_data_ref[self.entity_id] = {
+            "name": self._name,
             "title": self._title,
             "text": self._text,
             # If self._name (friendly name) could change and needs persisting, add it here.
@@ -294,5 +308,6 @@ class LongTextInputEntity(Entity):
             self._stored_data_ref[self.entity_id] = {}  # Initialize if somehow missing
         self._stored_data_ref[self.entity_id]["title"] = new_title
         self._stored_data_ref[self.entity_id]["text"] = self._text
+        self._stored_data_ref[self.entity_id]["name"] = self._name
 
         self.hass.async_create_task(self._save_data_func())
