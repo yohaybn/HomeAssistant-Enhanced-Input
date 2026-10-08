@@ -7,7 +7,6 @@ from homeassistant.const import CONF_NAME
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.device_registry import DeviceInfo  # For device_info
 from typing import Any  # For type hinting
 
 from .helpers import migrate_storage, slugify_name, to_text
@@ -249,23 +248,6 @@ class LongTextInputEntity(Entity):
     @property
     def extra_state_attributes(self):
         return {"long_text": self._text, "length": len(self._text)}
-
-    @property
-    def device_info(self) -> DeviceInfo:
-        config_entry = self.hass.config_entries.async_get_entry(self._config_entry_id)
-        device_name = DEFAULT_NAME  # Fallback
-        if config_entry:
-            device_name = (
-                f"Enhanced Input ({config_entry.title or self._config_entry_id})"
-            )
-
-        return DeviceInfo(
-            identifiers={(DOMAIN, self._config_entry_id)},
-            name=device_name,
-            manufacturer="Enhanced Input Integration",
-            model="Long Text Storage",  # Optional
-            # sw_version= # Optional, e.g., from manifest.json version
-        )
 
     async def async_added_to_hass(self):
         _LOGGER.debug(f"Entity {self.entity_id} added. Persisting current state.")
