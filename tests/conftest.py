@@ -10,6 +10,7 @@ def _mod(name, **attrs):
     m = types.ModuleType(name)
     m.__dict__.update(attrs)
     sys.modules[name] = m
+    return m
 
 
 class _Entity:
@@ -31,3 +32,7 @@ _mod("homeassistant.const", CONF_NAME="name")
 _mod("homeassistant.config_entries", ConfigEntry=object)
 _mod("homeassistant.helpers.storage", Store=_Generic)
 _mod("homeassistant.helpers.device_registry", DeviceInfo=dict)
+_mod("homeassistant.helpers.entity_registry")
+sys.modules["homeassistant.helpers"].entity_registry = sys.modules[
+    "homeassistant.helpers.entity_registry"
+]
